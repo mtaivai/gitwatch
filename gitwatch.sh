@@ -37,6 +37,7 @@
 
 REMOTE=""
 BRANCH=""
+PULL=0
 SLEEP_TIME=2
 DATE_FMT="+%Y-%m-%d %H:%M:%S"
 COMMITMSG="Scripted auto-commit on change (%d) by gitwatch.sh"
@@ -76,6 +77,7 @@ shelp() {
   echo "                    'git push <remote> <current branch>:<branch>'  where"
   echo "                    <current branch> is the target of HEAD (at launch)"
   echo "                  if no remote was defined with -r, this option has no effect"
+  echo " -P               Do pull before push"
   echo " -g <path>        Location of the .git directory, if stored elsewhere in"
   echo "                  a remote location. This specifies the --git-dir parameter"
   echo " -l <lines>       Log the actual changes made in this commit, up to a given"
@@ -149,6 +151,7 @@ while getopts b:d:h:g:L:l:m:p:r:s:e:M option; do # Process command line options
     m) COMMITMSG=${OPTARG} ;;
     M) SKIP_IF_MERGING=1 ;;
     p | r) REMOTE=${OPTARG} ;;
+    P) PUSH=1 ;;
     s) SLEEP_TIME=${OPTARG} ;;
     e) EVENTS=${OPTARG} ;;
     *)
@@ -275,14 +278,20 @@ cd "$TARGETDIR" || {
 if [ -n "$REMOTE" ]; then        # are we pushing to a remote?
   if [ -z "$BRANCH" ]; then      # Do we have a branch set to push to ?
     PUSH_CMD="$GIT push $REMOTE" # Branch not set, push to remote without a branch
+    PULL_CMD="$GIT pull $REMOTE"
   else
     # check if we are on a detached HEAD
     if HEADREF=$($GIT symbolic-ref HEAD 2> /dev/null); then # HEAD is not detached
       #PUSH_CMD="$GIT push $REMOTE $(sed "s_^refs/heads/__" <<< "$HEADREF"):$BRANCH"
       PUSH_CMD="$GIT push $REMOTE ${HEADREF#refs/heads/}:$BRANCH"
+      PULL_CMD="$GIT pull $REMOTE ${HEADREF#refs/heads/}:$BRANCH"
     else # HEAD is detached
       PUSH_CMD="$GIT push $REMOTE $BRANCH"
+      PULL_CMD="$GIT pull $REMOTE $BRANCH"
     fi
+  fi
+  if [ $PULL ]; then
+    PUSH_CMD="$PULL_CMD && $PUSH_CMD"
   fi
 else
   PUSH_CMD="" # if not remote is selected, make sure push command is empty
