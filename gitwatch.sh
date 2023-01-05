@@ -134,7 +134,7 @@ is_merging () {
 
 ###############################################################################
 
-while getopts b:d:h:g:L:l:m:p:P:r:s:e:M option; do # Process command line options
+while getopts b:d:h:g:L:l:m:p:Pr:s:e:M option; do # Process command line options
   case "${option}" in
     b) BRANCH=${OPTARG} ;;
     d) DATE_FMT=${OPTARG} ;;
